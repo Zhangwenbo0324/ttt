@@ -60,13 +60,7 @@ torch.cuda.manual_seed(args.seed)
 
 tf = transforms.Compose([ToTensor()])
 
-# train_set = dataset(args.root, 'train', args.fig_type, args.img_size, args.seed, 120000, tf)
-# valid_set = dataset('/data/zwb/PGM', 'val', 'extrapolation', args.img_size, args.seed, 120000, tf)
-# test_set = dataset('/data/zwb/PGM', 'test', 'extrapolation', args.img_size, args.seed, 120000, tf)
 
-# train_set = dataset(args.root, 'train_', args.fig_type, args.img_size, args.seed, 128, tf)
-# valid_set = dataset('/data/zwb/PGM', 'val_', 'extrapolation_lite_train6w_test2w', args.img_size, args.seed, 120000, tf)
-# test_set = dataset('/data/zwb/PGM', 'test_', 'extrapolation_lite_train6w_test2w', args.img_size, args.seed, 120000, tf)
 
 train_set = dataset(args.root, 'train', args.fig_type, args.img_size, args.seed, 120000, tf)
 valid_set = dataset(args.root, 'val', args.fig_type, args.img_size, args.seed, 20000, tf)
@@ -78,7 +72,7 @@ valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=False, 
                           pin_memory=True)
 test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, pin_memory=True)
 
-# save_name = args.model_name + '_' + args.fig_type + '_with_aug_use12w_' + str(args.img_size)
+
 save_name = args.model_name + '_' + args.fig_type + str(args.img_size)
 
 save_path_model = os.path.join('/mnt/data/zwb/nips2022', args.dataset, 'models', save_name)
@@ -91,12 +85,7 @@ if not os.path.exists(save_path_log):
 
 
 model = ARII(image_size=args.img_size, alpha=0, alpha_learn=False).to(device)
-# model.load_state_dict(torch.load('pgm/models/scl_4_vqEMA_80x5_relationNet64_withreconfrom6_addColSapmle_alldata_Noalpha_lr1e-3_attr.rel.pairs160/model_epoch_04_iter_27000.pth'))
-# model.load_state_dict(torch.load('pgm/models/scl_4_vqEMA_10x64_relationNet128_lr1e-4_extrapolation_lite_train6w_test2w160/model_30.pth'))
-# model.load_state_dict(torch.load('raven/models/scl_5_center_single160/model_30.pth'))
-# model.load_state_dict(torch.load('raven/models/scl_4_vqEMA_10x64_relationNet128_center_single160/model_90.pth'))
 
-# optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
 optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr,
                               weight_decay=args.wd)
 
@@ -117,32 +106,14 @@ def train(epoch):
 
     train_loader_iter = iter(train_loader)
     for batch_idx in trange(len(train_loader_iter)):
-        # if batch_idx == 5:
-        #     break
-        image, target = next(train_loader_iter)
-        # print(image.dtype)
-        # print(image[0][0])
 
-        # row_to_column_idx = [0, 3, 6, 1, 4, 7, 2, 5]
-        # image_col = torch.cat((image[:, row_to_column_idx], image[:, 8:]), dim=1)  # B,16
-        # image = torch.cat((image, image_col), dim=0)  # 2B, 16
-        # target = torch.cat((target, target), dim=0)
-        # # print(image.shape[0], target.shape[0])
+        image, target = next(train_loader_iter)
+
 
         image = Variable(image, requires_grad=True).to(device)
         # print(image[0,0])
         target = Variable(target, requires_grad=False).to(device)
 
-        # predict = model(image)
-        #
-        # # loss = contrast_loss(predict, target)
-        # loss = F.cross_entropy(predict, target)
-        # pred = torch.max(predict, 1)[1]
-        # correct = pred.eq(target.data).cpu().sum().numpy()
-
-        ######## dot product loss#########
-        # logit1, logit2 = model(image)
-        # logit1, logit2, vq_loss = model(image)  # vq version No recon
         logit1, logit2, vq_loss, recon_loss = model(image)  # vq version with recon
 
         s1 = F.softmax(logit1, dim=-1)
